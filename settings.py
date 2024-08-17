@@ -1,5 +1,5 @@
 #game settings
-RES = width, height = 1600, 900
+RES = WIDTH, HEIGHT = 1600, 900
 FPS = 60
 
 
