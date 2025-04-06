@@ -2,14 +2,14 @@ from sprite_object import *
 from random import randint, random, choice
 
 class NPC(AnimatedSprites):
-    def __init__(self, game, path='resources/sprites/npc/soldier/0.png', pos=(10.5, 5.5), scale=0.6, shift=0.38, animation_time=180):
+    def __init__(self, game, path='resources/sprites/npc/soldier/0.png', pos=(10.5, 5.5), scale=0.6, shift=0.38, animation_time=180, color='blue'):
         super().__init__(game, path, pos, scale, shift, animation_time)
         self.attack_images = self.get_images(self.path + '/attack')
         self.death_images = self.get_images(self.path + '/death')
         self.idle_images = self.get_images(self.path + '/idle')
         self.pain_images = self.get_images(self.path + '/pain')
         self.walk_images = self.get_images(self.path + '/walk')
-        
+        self.color = color
         self.attack_dist = randint(3, 6)
         self.speed = 0.03
         self.size = 10 
@@ -40,12 +40,24 @@ class NPC(AnimatedSprites):
             self.y += dy
 
     def movement(self):
-        next_pos = self.game.player.map_pos
+        next_pos = self.game.pathfinding.get_path(self.map_pos, self.game.player.map_pos)
         next_x, next_y = next_pos
-        angle = math.atan2(next_y + 0.5 - self.y, next_x + 0.5 - self.x)
-        dx = math.cos(angle) * self.speed
-        dy = math.sin(angle) * self.speed
-        self.check_wall_collision(dx, dy)
+        if not THREE_DIM_DISPLAY:
+            pg.draw.rect(self.game.screen, self.color, (100 * next_x, 100 * next_y, 100, 100))
+        if next_pos not in self.game.object_handler.npc_positions:
+            angle = math.atan2(next_y + 0.5 - self.y, next_x + 0.5 - self.x)
+            dx = math.cos(angle) * self.speed
+            dy = math.sin(angle) * self.speed
+            self.check_wall_collision(dx, dy)
+
+    def attack(self):
+        if self.animation_trigger:
+            self.game.sound.npc_attack.play()
+            roll = random()
+            print(roll)
+            if roll < self.accuracy:
+                self.game.player.get_damage(self.attack_damage)
+
 
     def animate_death(self):
         if not self.alive:
@@ -84,8 +96,13 @@ class NPC(AnimatedSprites):
             
             elif self.ray_cast_value:
                 self.player_search_trigger = True
-                self.animate(self.walk_images)
-                self.movement()
+                
+                if self.dist < self.attack_dist:
+                    self.animate(self.attack_images)
+                    self.attack()
+                else:
+                    self.animate(self.walk_images)
+                    self.movement()
             
             elif self.player_search_trigger:
                 self.animate(self.walk_images)
@@ -168,3 +185,29 @@ class NPC(AnimatedSprites):
         pg.draw.circle(self.game.screen, 'red', (100 * self.x, 100*self.y), 15)
         if self.ray_cast_player_npc():
             pg.draw.line(self.game.screen, 'orange', (100 * self.game.player.x, 100*self.game.player.y), (100 * self.x, 100*self.y),2)
+            
+            
+            
+class SoliderNPC(NPC):
+    def __init__(self, game, path='resources/sprites/npc/soldier/0.png', pos=(10.5, 5.5), scale=0.6, shift=0.38, animation_time=180, color='blue'):
+        super().__init__(game, path, pos, scale, shift, animation_time)
+        
+class CacoDemonNPC(NPC):
+    def __init__(self, game, path='resources/sprites/npc/caco_demon/0.png', pos=(10.5, 6.5), scale=0.7, shift=0.27, animation_time=250, color='red'):
+        super().__init__(game, path, pos, scale, shift, animation_time)
+        self.attack_dist = 1.0
+        self.health = 150
+        self.attack_damage = 25
+        self.speed = .05
+        self.accuracy = 0.35
+        
+class CyberDemonNPC(NPC):
+    def __init__(self, game, path='resources/sprites/npc/cyber_demon/0.png', pos=(11.5, 6.0), scale=1, shift=0.04, animation_time=210, color='green'):
+        super().__init__(game, path, pos, scale, shift, animation_time)
+        self.attack_dist = 6
+        self.health = 200
+        self.attack_damage = 15
+        self.speed = .055
+        self.accuracy = 0.25
+        
+        

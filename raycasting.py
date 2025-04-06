@@ -6,7 +6,7 @@ class RayCasting:
     def __init__(self, game):
         self.game = game
         self.ray_casting_result = []
-        self.object_to_render  = []
+        self.objects_to_render  = []
         self.textures = self.game.object_render.wall_textures
     
     def get_objects_to_render(self):
